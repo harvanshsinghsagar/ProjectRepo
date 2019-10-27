@@ -1,17 +1,4 @@
-"""
-Mask R-CNN
-Multi-GPU Support for Keras.
 
-Copyright (c) 2017 Matterport, Inc.
-Licensed under the MIT License (see LICENSE for details)
-Written by Waleed Abdulla
-
-Ideas and a small code snippets from these sources:
-https://github.com/fchollet/keras/issues/2436
-https://medium.com/@kuza55/transparent-multi-gpu-training-on-tensorflow-with-keras-8b0016fd9012
-https://github.com/avolkov1/keras_experiments/blob/master/keras_exp/multigpu/
-https://github.com/fchollet/keras/blob/master/keras/utils/training_utils.py
-"""
 
 import tensorflow as tf
 import keras.backend as K
@@ -20,12 +7,7 @@ import keras.models as KM
 
 
 class ParallelModel(KM.Model):
-    """Subclasses the standard Keras Model and adds multi-GPU support.
-    It works by creating a copy of the model on each GPU. Then it slices
-    the inputs and sends a slice to each copy of the model, and then
-    merges the outputs together and applies the loss on the combined
-    outputs.
-    """
+   
 
     def __init__(self, keras_model, gpu_count):
         """Class constructor.
@@ -42,6 +24,15 @@ class ParallelModel(KM.Model):
         """Redirect loading and saving methods to the inner model. That's where
         the weights are stored."""
         if 'load' in attrname or 'save' in attrname:
+            
+        inputs = KL.Input(shape=x_train.shape[1:], name="input_image")
+        x = KL.Conv2D(32, (3, 3), activation='relu', padding="same",
+                      name="conv1")(inputs)
+        x = KL.Conv2D(64, (3, 3), activation='relu', padding="same",
+                      name="conv2")(x)
+        x = KL.MaxPooling2D(pool_size=(2, 2), name="pool1")(x)
+        x = KL.Flatten(name="flat1")(x)
+        x = KL.Dense(128, activation='relu', name="dense1")(x)
             return getattr(self.inner_model, attrname)
         return super(ParallelModel, self).__getattribute__(attrname)
 
@@ -155,21 +146,4 @@ if __name__ == "__main__":
     datagen = ImageDataGenerator()
     model = build_model(x_train, 10)
 
-    # Add multi-GPU support.
-    model = ParallelModel(model, GPU_COUNT)
-
-    optimizer = keras.optimizers.SGD(lr=0.01, momentum=0.9, clipnorm=5.0)
-
-    model.compile(loss='sparse_categorical_crossentropy',
-                  optimizer=optimizer, metrics=['accuracy'])
-
-    model.summary()
-
-    # Train
-    model.fit_generator(
-        datagen.flow(x_train, y_train, batch_size=64),
-        steps_per_epoch=50, epochs=10, verbose=1,
-        validation_data=(x_test, y_test),
-        callbacks=[keras.callbacks.TensorBoard(log_dir=MODEL_DIR,
-                                               write_graph=True)]
-    )
+  
